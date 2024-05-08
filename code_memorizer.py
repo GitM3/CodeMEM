@@ -52,7 +52,7 @@ def z_similarity(str1, str2):
 
         if not found:
             miss += 1
-            if miss > 2:
+            if miss > 1:
                 return 0  # More than 2 misses, strings are not similar
 
     return 1  # Strings are similar if there are 2 or fewer misses

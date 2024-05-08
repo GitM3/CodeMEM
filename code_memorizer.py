@@ -17,31 +17,74 @@ def load_file():
         root.title(f"Memorizing: {file_path.split('/')[-1]}")
         check_skip_conditions()
 
+    # Function to count special characters
+
+
+def count_chars(s):
+    return {
+        "(": s.count("("),
+        ")": s.count(")"),
+        "[": s.count("["),
+        "]": s.count("]"),
+        "=": s.count("="),
+        ".": s.count("."),
+    }
+
+
+def z_similarity(str1, str2):
+    i = 0  # Index for str2
+    miss = 0  # Count of misses
+    len2 = len(str2)
+
+    typed_counts = count_chars(str1)
+    correct_counts = count_chars(str2)
+    if typed_counts != correct_counts:
+        return 0
+
+    for char1 in str1:
+        found = False
+        while i < len2:
+            if str2[i] == char1:
+                found = True
+                i += 1  # Move to the next character in str2
+                break
+            i += 1  # Skip a character in str2
+
+        if not found:
+            miss += 1
+            if miss > 2:
+                return 0  # More than 2 misses, strings are not similar
+
+    return 1  # Strings are similar if there are 2 or fewer misses
+
 
 def check_line():
     """Check the typed line against the current line in the file, ignoring case and whitespace,
     and automatically skip lines in the skip list or empty lines."""
     global current_line, attempt
-
+    unformatted = line_entry.get().strip()
     removed_comments = lines[current_line].split("#")[0]
-    typed_line = line_entry.get().strip().replace(" ", "")
-    correct_line = removed_comments.strip().replace(" ", "")
+    typed_line = line_entry.get().strip().replace(" ", "").lower()
+    correct_line = removed_comments.strip().replace(" ", "").lower()
 
-    if typed_line.lower() == correct_line.lower():
-        line_entry.config(bg="green")
+    if z_similarity(typed_line, correct_line) == 1:
+        line_entry.config(bg="#A3BE8C")
         add_line()
         current_line += 1
         line_entry.delete(0, tk.END)
         check_skip_conditions()
         attempt = 1
+        prev_ans.config(text="")
     else:
-        line_entry.config(bg="red")
+        line_entry.config(bg="#BF616A")
         attempt += 1
-        if attempt == 2:
-            display_hints()
+        # if attempt == 2:
+        #     display_hints()
         if attempt == 3:
-            attempt = 1
             add_line()
+            attempt = 1
+            prev_ans.config(text="Your previous answer: " + unformatted)
+            line_entry.delete(0, tk.END)
             current_line += 1
             check_skip_conditions()
 
@@ -54,7 +97,7 @@ def check_skip_conditions():
     global current_line
 
     # Define a list of strings that, if present in a line, should cause the line to be skipped.
-    skip_list = ["def", '"""']
+    skip_list = ["def", '"""', "import", "from", "load"]
 
     # Check if the current line is empty or contains any skip phrases.
     while current_line < len(lines) and (
@@ -65,6 +108,7 @@ def check_skip_conditions():
         current_line += 1
         line_entry.delete(0, tk.END)
 
+    display_hints()  # Added here because I need hints permanently lol :)
     if current_line > len(lines):
         messagebox.showinfo("Congratulations!", "You have finished typing the file.")
 
@@ -129,6 +173,14 @@ line_entry.pack(fill=tk.X, padx=10, pady=(0, 10))
 line_entry.bind("<Return>", lambda event: check_line())
 line_entry.bind("<Control-Return>", skip_line)  # Bind Ctrl-Enter to skip a line
 
+# Label for incorrect answers
+prev_ans = tk.Label(
+    frame,
+    font=("Consolas", 10),
+    bg="#434C5E",
+    fg="#ECEFF4",
+)
+prev_ans.pack(fill=tk.X, padx=10, pady=(0, 10))
 # Label for hints
 hint_label = tk.Label(
     frame,
